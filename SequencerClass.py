@@ -22,6 +22,7 @@ class Sequencer:
         self.__TimeToNextStep = TimeToNextStep
         self.__TimeOfStart = utime.ticks_ms()
         self.__Run = True
+        return 0 #Step 0 == waiting
         
     def SequencerUpdater(self, ActualStep):
         if self.__Run:
@@ -32,7 +33,12 @@ class Sequencer:
         else:
             return ActualStep
                 
-                
+    def Stop(self):
+        self.__NextStep = 0
+        self.__TimeToNextStep = utime.ticks_ms()
+        self.__TimeOfStart = utime.ticks_ms()
+        self.__Run = False
+
                 
                 
                 
