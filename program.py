@@ -43,7 +43,11 @@ class ProgramClass:
     @property
     def Servo4(self):
         return self.__Servo4
-    
+
+ProgramStop = (
+        ProgramClass( 5000, 00000, 00000, 000, 000, 000, 000 ),
+        ProgramClass( 5000, 00000, 00000, 000, 000, 000, 000 ),
+        )
 Program1 = (
         #Time, MotorL, MotorR, Servo1
         ProgramClass( 5000, 30000, 00000, 000, 000, 000, 000 ),
@@ -58,7 +62,7 @@ Program1 = (
 
 Program2 = (
         #Time, MotorL, MotorR, Servo1
-        ProgramClass( 5000, 00000, 00000, 000, 000, 000, 000 ),
+        ProgramClass( 5000, 00000, 00000, 001, 000, 000, 000 ),
         ProgramClass( 5000, 00000, 00000, 025, 000, 000, 010),
         ProgramClass( 5000, 00000, 00000, 050, 000, 000, 020),
         ProgramClass( 5000, 00000, 00000, 075, 000, 000, 030),
