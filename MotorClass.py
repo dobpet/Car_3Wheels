@@ -5,6 +5,7 @@ methode for cyclic function:
     - instance.SpeedUpdate()
 control of motor:
     - instance.SetSpeed(speed) //speed in range MinSpeed and MaxSpeed
+    - instance.SetSpeedProc(proc) //speed in range -100 to 100 %
 read actual speed:
     - speed = instance.GetActualSpeed()
 
@@ -66,7 +67,14 @@ class MotorClass:
         
     def SetSpeed(self, Speed):
         if ((Speed < self.MaxSpeed) or (Speed > - self.MaxSpeed)):
+            #print("DutySpeedSet: " + str(Speed))
             self.__ReqSpeed = Speed
+    
+    def SetSpeedProc(self, Proc):#in range -100 to 100%
+        if ((Proc <= 100) and (Proc >= -100)):
+            DutySpeed = (self.MaxSpeed / 100) * Proc
+            self.SetSpeed(DutySpeed)   
+        
     
     def GetActualSpeed(self):
         return(self.__ActualSpeed)
@@ -106,12 +114,12 @@ class MotorClass:
         self.__PinBackward.duty_u16(30000)
        
     def MoveForward(self, Speed):
-        self.__PinForward.duty_u16(abs(Speed))
+        self.__PinForward.duty_u16(int(abs(Speed)))
         self.__PinBackward.duty_u16(0)
     
     def MoveBackward(self, Speed):
         self.__PinForward.duty_u16(0)
-        self.__PinBackward.duty_u16(abs(Speed))
+        self.__PinBackward.duty_u16(int(abs(Speed)))
         
     def MoveStop(self):
         self.__PinForward.duty_u16(0)
@@ -119,6 +127,7 @@ class MotorClass:
         
     def SpeedUpdate(self):
         self.SpeedCalculate()
+        #print("DutySpeedSet: " + str(self.__ActualSpeed))
         if (self.__ActualSpeed > 0):
             self.MoveForward(self.__ActualSpeed)
         elif (self.__ActualSpeed < 0):

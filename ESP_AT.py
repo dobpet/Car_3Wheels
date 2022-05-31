@@ -2,7 +2,7 @@ from machine import UART, Pin, Timer
 import utime
 import binascii
 from settings import ESP_Networks
-from ESP_DC import ScannedNetwork
+from ESP_DC import ScannedNetwork, STA_Info
 
 
 
@@ -28,6 +28,8 @@ class ESP_AT(object):
     __dataReceivedCallback = None
     __state = None
     
+    __STAState = STA_Info()
+    
     ESP_Created = const(0)
     ESP_Initializing = const(1)
     ESP_Initialized = const(2)
@@ -40,12 +42,13 @@ class ESP_AT(object):
     
     ESP_STA_Connecting = const(7)
     ESP_STA_ConnectingDone = const(8)
+    ESP_STA_KnownNetworkNotFound = const(9)
     
-    ESP_ServerStarting = const(9)
-    ESP_ServerStarted = const(10)
+    ESP_ServerStarting = const(10)
+    ESP_ServerStarted = const(11)
     
-    ESP_Connected = const(11)
-    ESP_Disconnected = const(12)
+    ESP_Connected = const(12)
+    ESP_Disconnected = const(13)
     
     __AvailableNetworks = []
     __TargetNetwork = None
@@ -180,6 +183,7 @@ class ESP_AT(object):
             self.__SendMessage("+ATE0")
         elif self.__ESPMessage == 'OK' and self.__ESP_AT_SM_State >= 4:
             self.__ESP_AT_SM_State += 1
+            print(self.__ESP_AT_SM_State)
             if self.__ESP_AT_SM_State == 5:
                 self.__SendMessage("AT+GMR");
             elif self.__ESP_AT_SM_State == 6:
@@ -197,6 +201,10 @@ class ESP_AT(object):
             elif self.__ESP_AT_SM_State == 12:
                 self.__SendMessage("AT+CIPDINFO=1")
                 self.__ESP_AT_SM_State = 13
+            elif self.__ESP_AT_SM_State == 13:
+                pass
+                #self.__ESP_AT_SM_State = 12
+                #self.__SendMessage("AT+CWCOUNTRY_CUR=1,\"CS\",1,10")
             elif self.__ESP_AT_SM_State == 14:
                 self.__StateChange(None, ESP_Initialized)
             elif self.__ESP_AT_SM_State == 16:
@@ -223,6 +231,7 @@ class ESP_AT(object):
                     self.__ESP_AT_SM_State = 35
                     if self._debug:
                         print(" --> ESP AT     : _____ known network not available _____")
+                        self.__StateChange(None, ESP_STA_KnownNetworkNotFound)
                 else:
                     self.__StateChange(None, ESP_STA_Connecting)
                     self.__ESP_AT_SM_State = 28
@@ -238,16 +247,14 @@ class ESP_AT(object):
             elif self.__ESP_AT_SM_State == 46:
                 self.__StateChange(None, ESP_ServerStarted)
                 self.__ESP_AT_SM_State = 32
+        elif self.__ESPMessage.startswith("+CWJAP:"):
+            self.__STAState.ParseCWJAP(self.__ESPMessage)
         elif self.__ESPMessage.startswith("+CIPSTAMAC:"):
-            self.__stationMAC = self.__ESPMessage[12:-1].upper()
+            self.__STAState.ParseCIPSTAMAC(self.__ESPMessage)
         elif self.__ESPMessage.startswith("+CIPAPMAC:"):
             self.STA_NetInfo[3] = self.__ESPMessage[11:-1].upper()
-        elif self.__ESPMessage.startswith("+CIPSTA:ip:"):
-            self.STA_NetInfo[0] = self.__ESPMessage[12:-1].upper()
-        elif self.__ESPMessage.startswith("+CIPSTA:gateway:"):
-            self.STA_NetInfo[1] = self.__ESPMessage[17:-1].upper()
-        elif self.__ESPMessage.startswith("+CIPSTA:netmask:"):
-            self.STA_NetInfo[2] = self.__ESPMessage[17:-1].upper()
+        elif self.__ESPMessage.startswith("+CIPSTA:"):
+            self.__STAState.ParseCIPSTA(self.__ESPMessage)
         elif self.__ESPMessage.startswith("+CWLAP:("):
             _bf = ScannedNetwork(self.__ESPMessage[8:-1])
             self.__AvailableNetworks.append(_bf)
@@ -339,6 +346,10 @@ class ESP_AT(object):
             
     def Debug(self, Value):
         self._debug = Value;
+        
+    @property
+    def STA_State(self):
+        return self.__STAState
      
     @property
     def IsModuleReady(self):

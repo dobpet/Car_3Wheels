@@ -70,3 +70,65 @@ class ScannedNetwork:
     
     def __repr__(self):
         return self.__SSID + " ( Ch " + str(self.__Channel) + "  RSSI " + str(self.__RSSI) + "dBm  " + self.__EncMethod + "  " + self.__MAC + " )"
+    
+class STA_Info:
+    __SSID = None
+    __APMAC = None
+    __STAMAC = None
+    __Channel = None
+    __RSSI = None
+    __IP = None
+    __SM = None
+    __DG = None
+    
+    def ParseCWJAP(self, CWJAP):
+        #+CWJAP:"Pidisvet","e4:be:ed:4d:7c:29",6,-64
+        _dat = CWJAP[7::]
+        _parts = _dat.split(",")
+        self.__SSID = _parts[0][1:-1]
+        self.__APMAC = _parts[1][1:-1].upper()
+        self.__Channel = int(_parts[2])
+        self.__RSSI = int(_parts[3])
+        
+    def ParseCIPSTA(self, CIPSTA):
+        if CIPSTA.startswith("+CIPSTA:ip:"):
+            self.__IP = CIPSTA[12:-1].upper()
+        elif CIPSTA.startswith("+CIPSTA:gateway:"):
+            self.__DG = CIPSTA[17:-1].upper()
+        elif CIPSTA.startswith("+CIPSTA:netmask:"):
+            self.__SM = CIPSTA[17:-1].upper()
+    
+    def ParseCIPSTAMAC(self, CIPSTAMAC):
+        self.__STAMAC = CIPSTAMAC[12:-1].upper()
+    
+    @property
+    def SSID(self):
+        return self.__SSID
+    
+    @property
+    def APMAC(self):
+        return self.__APMAC
+    
+    @property
+    def STAMAC(self):
+        return self.__STAMAC
+    
+    @property
+    def Channel(self):
+        return self.__Channel
+    
+    @property
+    def RSSI(self):
+        return self.__RSSI
+    
+    @property
+    def IP(self):
+        return self.__IP
+    
+    @property
+    def SM(self):
+        return self.__SM
+    
+    @property
+    def DG(self):
+        return self.__DG

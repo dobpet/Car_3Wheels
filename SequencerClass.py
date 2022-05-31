@@ -11,8 +11,9 @@ class Sequencer:
         self.__TimeOfStart = utime.ticks_ms()   
     
     def __TimeAction(self):
+        #print("Sequencer: RUN " + str(utime.ticks_ms() - self.__TimeOfStart) + ", " + str(self.__TimeToNextStep))        
         if (utime.ticks_ms() - self.__TimeOfStart) > self.__TimeToNextStep:
-            self.__Run = False
+            #self.__Run = False
             return True
         else:
             return False
@@ -20,13 +21,14 @@ class Sequencer:
     def SetNextStep(self, NextStep, TimeToNextStep):
         self.__NextStep = NextStep
         self.__TimeToNextStep = TimeToNextStep
-        self.__TimeOfStart = utime.ticks_ms()
-        self.__Run = True
-        return 0 #Step 0 == waiting
+        #self.__TimeOfStart = utime.ticks_ms()
+        #self.__Run = True
+        #return 0 #Step 0 == waiting
         
     def SequencerUpdater(self, ActualStep):
         if self.__Run:
             if self.__TimeAction():
+                self.__TimeOfStart = utime.ticks_ms()
                 return self.__NextStep
             else:
                 return ActualStep
@@ -38,6 +40,13 @@ class Sequencer:
         self.__TimeToNextStep = utime.ticks_ms()
         self.__TimeOfStart = utime.ticks_ms()
         self.__Run = False
+    
+    def Start(self):
+        self.__TimeOfStart = utime.ticks_ms()
+        self.__Run = True
+        
+    def GetRun(self):
+        return self.__Run
 
                 
                 
