@@ -9,6 +9,8 @@ from ESP_DC import ScannedNetwork, STA_Info
 class ESP_AT(object):
     
     # private variables
+    __ConnectingToNetwork = 0
+    
     __lastRxTS = None
     __ESPMessage = None
     
@@ -218,26 +220,26 @@ class ESP_AT(object):
                 self.__SendMessage("AT+CWSAP=\""+self.__AP_SSID+"\",\""+self.__AP_Password+"\","+str(self.__AP_Channel)+",4")
             elif self.__ESP_AT_SM_State == 23:
                 self.__StateChange(None, ESP_AP_Activated)
-            elif self.__ESP_AT_SM_State == 26:
-                self.__TargetNetwork = None
-                for i in ESP_Networks:
-                    for j in self.__AvailableNetworks:
-                        if i.SSID == j.SSID:
-                            self.__TargetNetwork = i
-                            break
-                    if self.__TargetNetwork != None:
-                        break
-                if self.__TargetNetwork == None:
-                    self.__ESP_AT_SM_State = 35
-                    if self._debug:
-                        print(" --> ESP AT     : _____ known network not available _____")
-                        self.__StateChange(None, ESP_STA_KnownNetworkNotFound)
-                else:
-                    self.__StateChange(None, ESP_STA_Connecting)
-                    self.__ESP_AT_SM_State = 28
-                    if self._debug:
-                        print(" --> ESP AT     : _____ starting connection to " + self.__TargetNetwork.SSID + " _____")                         
-                    self.__SendMessage("AT+CWJAP=\"" + self.__TargetNetwork.SSID + "\",\"" + self.__TargetNetwork.Password + "\"")
+#             elif self.__ESP_AT_SM_State == 26:
+#                       
+#                 for i in ESP_Networks:
+#                     for j in self.__AvailableNetworks:
+#                         if i.SSID == j.SSID:
+#                             self.__TargetNetwork = i
+#                             break
+#                     if self.__TargetNetwork != None:
+#                         break
+#                 if self.__TargetNetwork == None:
+#                     self.__ESP_AT_SM_State = 35
+#                     if self._debug:
+#                         print(" --> ESP AT     : _____ known network not available _____")
+#                         self.__StateChange(None, ESP_STA_KnownNetworkNotFound)
+#                 else:
+#                     self.__StateChange(None, ESP_STA_Connecting)
+#                     self.__ESP_AT_SM_State = 28
+#                     if self._debug:
+#                         print(" --> ESP AT     : _____ starting connection to " + self.__TargetNetwork.SSID + " _____")                         
+#                     self.__SendMessage("AT+CWJAP=\"" + self.__TargetNetwork.SSID + "\",\"" + self.__TargetNetwork.Password + "\"")
             elif self.__ESP_AT_SM_State == 29:
                 self.__SendMessage("AT+CWJAP?")
             elif self.__ESP_AT_SM_State == 30:
@@ -247,6 +249,21 @@ class ESP_AT(object):
             elif self.__ESP_AT_SM_State == 46:
                 self.__StateChange(None, ESP_ServerStarted)
                 self.__ESP_AT_SM_State = 32
+        if (self.__ESP_AT_SM_State == 28) and (self.__ESPMessage.startswith("WIFI DISCONNECT")):
+            if self._debug:
+                print(" --> ESP AT     : _____ known network not available: wait for CWJAP _____")
+        if (self.__ESP_AT_SM_State == 28) and (self.__ESPMessage.startswith("+CWJAP:")):
+            self.__ConnectingToNetwork = self.__ConnectingToNetwork + 1
+            if len(ESP_Networks) > self.__ConnectingToNetwork:                        
+                self.__TargetNetwork = ESP_Networks[self.__ConnectingToNetwork]
+                self.__StateChange(None, ESP_STA_Connecting)
+                self.__ESP_AT_SM_State = 28
+                if self._debug:
+                    print(" --> ESP AT     : _____ starting connection to " + self.__TargetNetwork.SSID + " _____")                
+                self.__SendMessage("AT+CWJAP=\"" + self.__TargetNetwork.SSID + "\",\"" + self.__TargetNetwork.Password + "\"")
+            else:
+                self.__ESP_AT_SM_State = 35
+                self.__StateChange(None, ESP_STA_KnownNetworkNotFound)  
         elif self.__ESPMessage.startswith("+CWJAP:"):
             self.__STAState.ParseCWJAP(self.__ESPMessage)
         elif self.__ESPMessage.startswith("+CIPSTAMAC:"):
@@ -322,10 +339,13 @@ class ESP_AT(object):
         self.__SendMessage("AT+CIPAP=\""+self.__AP_IP+"\",\""+self.__AP_IP+"\",\""+self.__AP_SM+"\"")
         
     def STA_Connect(self):
-        self.__ESP_AT_SM_State = 25
-        self.__AvailableNetworks = []
-        self.__StateChange(None, ESP_NetworkScanning)
-        self.__SendMessage("AT+CWLAP")
+        self.__StateChange(None, ESP_STA_Connecting)
+        self.__ESP_AT_SM_State = 28
+        self.__ConnectingToNetwork = 0
+        self.__TargetNetwork = ESP_Networks[self.__ConnectingToNetwork]        
+        if self._debug:
+            print(" --> ESP AT     : _____ starting connection to " + self.__TargetNetwork.SSID + " _____")                         
+        self.__SendMessage("AT+CWJAP=\"" + self.__TargetNetwork.SSID + "\",\"" + self.__TargetNetwork.Password + "\"")
         
     
     def StartServer(self, PortNumber):
