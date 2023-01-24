@@ -1,0 +1,157 @@
+using System.Diagnostics;
+
+
+namespace MAUI_RCtrl.UserControls
+{
+
+    public partial class CrossController : ContentView
+    {
+        PanGestureRecognizer panGR = new();
+        public CrossController()
+        {
+            InitializeComponent();
+            panGR.PanUpdated += PanGR_PanUpdated;
+            GestureRecognizers.Add(panGR);
+        }
+
+        public bool Active
+        {
+            get { return (bool)GetValue(ActiveProperty); }
+            set { SetValue(ActiveProperty, value); }
+        }
+        public static readonly BindableProperty ActiveProperty = BindableProperty.Create("Active", typeof(bool), typeof(CrossController), false, propertyChanged: ActiveChanged);
+        private static void ActiveChanged(BindableObject bindable, object oldValue, object newValue)
+        {
+            CrossController controller = (CrossController)bindable;
+            if ((bool)newValue)
+            {
+                controller.ButtonColor = Colors.Lime;
+                controller.ctrl.TranslationX = 0;
+                controller.ctrl.TranslationY = 0;
+                controller.XPosition = 0;
+                controller.YPosition = 0;
+            }
+            else
+            {
+                controller.ButtonColor = Colors.Gray;
+            }
+        }
+
+        public Color ButtonColor
+        {
+            get { return (Color)GetValue(ButtonColorProperty); }
+            set { SetValue(ButtonColorProperty, value); }
+        }
+        public static readonly BindableProperty ButtonColorProperty = BindableProperty.Create("ButtonColor", typeof(Color), typeof(CrossController), Colors.Gray);
+
+        public sbyte XPosition
+        {
+            get { return (sbyte)GetValue(XPositionProperty); }
+            set { SetValue(XPositionProperty, value); }
+        }
+        public static readonly BindableProperty XPositionProperty = BindableProperty.Create("XPosition", typeof(sbyte), typeof(CrossController), (sbyte)0);
+
+        public sbyte YPosition
+        {
+            get { return (sbyte)GetValue(YPositionProperty); }
+            private set { SetValue(YPositionProperty, value); }
+        }
+        public static readonly BindableProperty YPositionProperty = BindableProperty.Create("YPosition", typeof(sbyte), typeof(CrossController), (sbyte)0);
+
+        private void PanGR_PanUpdated(object sender, PanUpdatedEventArgs e)
+        {
+            switch (e.StatusType)
+            {
+                case GestureStatus.Started:
+                    break;
+                case GestureStatus.Running:
+                    if (!Active)
+                        return;
+                    if (Math.Abs(e.TotalX) > (Width / 2) || Math.Abs(e.TotalY) > (Height / 2))
+                    {
+                        ctrl.TranslationX = 0;
+                        ctrl.TranslationY = 0;
+                        XPosition = 0;
+                        YPosition = 0;
+                    }
+                    else
+                    {
+                        ctrl.TranslationX = e.TotalX;
+                        ctrl.TranslationY = e.TotalY;
+                        sbyte X = (sbyte)((e.TotalX / (Width / 2)) * 105);
+                        if (X > 100)
+                            XPosition = 100;
+                        else if (X < -100)
+                            XPosition = -100;
+                        else
+                            XPosition = X;
+                        sbyte Y = (sbyte)((e.TotalY / (Height / 2)) * 105);
+                        if (Y > 100)
+                            YPosition = 100;
+                        else if (Y < -100)
+                            YPosition = -100;
+                        else
+                            YPosition = Y;
+                    }
+                    break;
+                case GestureStatus.Completed:
+                    ctrl.TranslationX = 0;
+                    ctrl.TranslationY = 0;
+                    XPosition = 0;
+                    YPosition = 0;
+                    break;
+                case GestureStatus.Canceled:
+                    ctrl.TranslationX = 0;
+                    ctrl.TranslationY = 0;
+                    XPosition = 0;
+                    YPosition = 0;
+                    break;
+            }
+        }
+
+
+    }
+
+    public class CrossControllerDrawable : IDrawable
+    {
+        public void Draw(ICanvas canvas, RectF dirtyRect)
+        {
+            canvas.BlendMode = BlendMode.Multiply;
+            canvas.StrokeColor = (Color)App.Current.Resources["EdgeColor"];
+            canvas.StrokeSize = 1;
+            canvas.DrawLine(dirtyRect.Width / 2, 0 + (dirtyRect.Height * 0.05f), dirtyRect.Width / 2, dirtyRect.Height * 0.95f);
+            canvas.DrawLine(0 + (dirtyRect.Width * 0.05f), dirtyRect.Height / 2, dirtyRect.Width * 0.95f, dirtyRect.Height / 2);
+
+            for (int i = 1; i <= 10; i++)
+            {
+                canvas.DrawLine((dirtyRect.Width / 2) - (i * 0.008f * dirtyRect.Width),
+                                (dirtyRect.Height / 2) + (i * 0.045f * dirtyRect.Height),
+                                (dirtyRect.Width / 2) + (i * 0.008f * dirtyRect.Width),
+                                (dirtyRect.Height / 2) + (i * 0.045f * dirtyRect.Height));
+                canvas.DrawLine((dirtyRect.Width / 2) - (i * 0.008f * dirtyRect.Width),
+                                (dirtyRect.Height / 2) - (i * 0.045f * dirtyRect.Height),
+                                (dirtyRect.Width / 2) + (i * 0.008f * dirtyRect.Width),
+                                (dirtyRect.Height / 2) - (i * 0.045f * dirtyRect.Height));
+                canvas.DrawLine((dirtyRect.Width / 2) - (i * 0.045f * dirtyRect.Width),
+                                (dirtyRect.Height / 2) - (i * 0.008f * dirtyRect.Height),
+                                (dirtyRect.Width / 2) - (i * 0.045f * dirtyRect.Width),
+                                (dirtyRect.Height / 2) + (i * 0.008f * dirtyRect.Height));
+                canvas.DrawLine((dirtyRect.Width / 2) + (i * 0.045f * dirtyRect.Width),
+                                (dirtyRect.Height / 2) - (i * 0.008f * dirtyRect.Height),
+                                (dirtyRect.Width / 2) + (i * 0.045f * dirtyRect.Width),
+                                (dirtyRect.Height / 2) + (i * 0.008f * dirtyRect.Height));
+            }
+
+            canvas.FontColor = (Color)App.Current.Resources["EdgeColor"];
+            canvas.FontSize = 18;
+            canvas.DrawString("FWD", dirtyRect.Width * 0.6f, dirtyRect.Height * 0.032f, 50, 20, HorizontalAlignment.Left, VerticalAlignment.Top);
+            canvas.DrawString("FWD", dirtyRect.Width * 0.4f - 50, dirtyRect.Height * 0.032f, 50, 20, HorizontalAlignment.Right, VerticalAlignment.Top);
+            canvas.DrawString("REV", dirtyRect.Width * 0.6f, dirtyRect.Height * 0.968f - 20, 50, 20, HorizontalAlignment.Left, VerticalAlignment.Bottom);
+            canvas.DrawString("REV", dirtyRect.Width * 0.4f - 50, dirtyRect.Height * 0.968f - 20, 50, 20, HorizontalAlignment.Right, VerticalAlignment.Bottom);
+            canvas.DrawString("LEFT", dirtyRect.Width * 0.046f, dirtyRect.Height * 0.415f - 20, 50, 20, HorizontalAlignment.Left, VerticalAlignment.Bottom);
+            canvas.DrawString("LEFT", dirtyRect.Width * 0.046f, dirtyRect.Height * 0.585f, 50, 20, HorizontalAlignment.Left, VerticalAlignment.Top);
+            canvas.DrawString("RIGHT", dirtyRect.Width * 0.954f - 60, dirtyRect.Height * 0.415f - 20, 60, 20, HorizontalAlignment.Right, VerticalAlignment.Bottom);
+            canvas.DrawString("RIGHT", dirtyRect.Width * 0.954f - 60, dirtyRect.Height * 0.585f, 60, 20, HorizontalAlignment.Right, VerticalAlignment.Bottom);
+        }
+    }
+}
